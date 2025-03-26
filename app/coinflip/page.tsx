@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 
 const CoinFlip = () => {
-  const [choice, setChoice] = useState<'heads' | 'tails' | null>(null);
+  const [, setChoice] = useState<'heads' | 'tails' | null>(null);
   const [result, setResult] = useState<'heads' | 'tails' | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -37,9 +37,10 @@ const CoinFlip = () => {
         setBalance(balance - bet);
         setMessage('😢 Perdu... Tu perds ta mise.');
       }
-    } catch (error) {
+    } catch {
       setMessage("Erreur serveur. Réessaie plus tard.");
     }
+    
 
     setLoading(false);
   };

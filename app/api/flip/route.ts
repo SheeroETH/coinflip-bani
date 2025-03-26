@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const win = result === choice;
 
     return NextResponse.json({ result, win });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

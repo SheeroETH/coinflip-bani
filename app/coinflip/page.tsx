@@ -1,88 +1,106 @@
+"use client"
 
-'use client';
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { motion } from "framer-motion"
 
-import React, { useState } from 'react';
+export default function CoinFlipGame() {
+  const [isFlipping, setIsFlipping] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+  const [balance, setBalance] = useState(950)
+  const [message, setMessage] = useState<string | null>(null)
 
-export default function CoinFlip() {
-  const [result, setResult] = useState<'pile' | 'face' | null>(null);
-  const [message, setMessage] = useState('');
-  const [balance, setBalance] = useState(1000);
-  const [bet, setBet] = useState(50);
-  const [loading, setLoading] = useState(false);
+  const flipCoin = async (choice: "Pile" | "Face") => {
+    if (isFlipping) return
 
-  const flip = async (choice: 'pile' | 'face') => {
-    if (bet > balance) {
-      setMessage("❌ Pas assez de $BANI");
-      return;
+    setIsFlipping(true)
+    setResult(null)
+    setMessage(null)
+
+    try {
+      const response = await fetch("/api/flip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          choice: choice.toLowerCase(), // "pile" ou "face"
+          bet: 100,
+        }),
+      })
+
+      const data = await response.json()
+      const outcome = data.result === "heads" ? "Pile" : "Face"
+      const win = data.win
+
+      setResult(outcome)
+      setMessage(win ? "🎉 Gagné !" : "😢 Perdu...")
+
+      if (win) {
+        setBalance((prev) => prev + 100)
+      } else {
+        setBalance((prev) => Math.max(0, prev - 100))
+      }
+    } catch (error) {
+      console.error("Erreur pendant le tirage :", error)
+      setMessage("Erreur serveur.")
     }
 
-    setLoading(true);
-    setMessage('');
-    setResult(null);
-
-    const response = await fetch('/api/flip', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ choice, bet }),
-    });
-
-    const data = await response.json();
-    setResult(data.result === 'heads' ? 'pile' : 'face');
-
-    if (data.win) {
-      setBalance(balance + bet);
-      setMessage('🎉 Gagné !');
-    } else {
-      setBalance(balance - bet);
-      setMessage('😢 Perdu...');
-    }
-
-    setLoading(false);
-  };
+    setIsFlipping(false)
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4">
-      <h1 className="text-4xl font-bold mb-4 text-white drop-shadow-lg">CoinFlip BANI 🪙</h1>
-      <p className="text-lg mb-2">Solde : <span className="text-green-400">{balance} $BANI</span></p>
+    <div className="flex min-h-screen items-center justify-center bg-gray-900 p-4">
+      <Card className="w-full max-w-md overflow-hidden rounded-xl border-0 bg-gray-800 shadow-xl">
+        <div className="flex flex-col items-center p-6">
+          <h1 className="mb-6 text-center text-3xl font-bold text-white">CoinFlip BANI 🪙</h1>
 
-      <div className="mb-4">
-        <label className="mr-2">Mise :</label>
-        <input
-          type="number"
-          min={1}
-          max={balance}
-          value={bet}
-          onChange={(e) => setBet(Number(e.target.value))}
-          className="text-black px-2 py-1 rounded border border-gray-400"
-        />
-      </div>
+          <div className="mb-4 rounded-full bg-gray-700 px-6 py-2 text-xl font-semibold text-yellow-400">
+            {balance} $BANI
+          </div>
 
-      <div className="flex gap-6 mb-6">
-        <button
-          onClick={() => flip('pile')}
-          disabled={loading}
-          className="bg-white text-black font-bold px-6 py-2 rounded-full hover:bg-gray-200 transition"
-        >
-          Pile
-        </button>
-        <button
-          onClick={() => flip('face')}
-          disabled={loading}
-          className="bg-white text-black font-bold px-6 py-2 rounded-full hover:bg-gray-200 transition"
-        >
-          Face
-        </button>
-      </div>
+          <div className="relative my-8 h-40 w-40">
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center"
+              animate={{
+                rotateY: isFlipping ? 1440 : 0,
+                scale: isFlipping ? [1, 1.2, 1] : 1,
+              }}
+              transition={{ duration: 2, ease: "easeInOut" }}
+            >
+              <div className="h-40 w-40 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 shadow-lg">
+                <div className="flex h-full items-center justify-center text-6xl text-black font-bold">
+                  {result === "Pile" ? "P" : result === "Face" ? "F" : "?"}
+                </div>
+              </div>
+            </motion.div>
+          </div>
 
-      {loading && <div className="animate-spin text-3xl">🪙</div>}
+          <div className="mb-6 h-8 text-center text-xl font-medium text-white">
+            {message && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                {message}
+              </motion.div>
+            )}
+          </div>
 
-      {result && !loading && (
-        <p className="text-2xl font-semibold mt-4">
-          Résultat : {result === 'pile' ? '🪙 Pile' : '💠 Face'}
-        </p>
-      )}
-
-      {message && <p className="text-xl mt-4">{message}</p>}
+          <div className="flex w-full gap-4">
+            <Button
+              onClick={() => flipCoin("Pile")}
+              disabled={isFlipping}
+              className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 py-6 text-lg font-bold hover:from-purple-700 hover:to-blue-700"
+            >
+              Pile
+            </Button>
+            <Button
+              onClick={() => flipCoin("Face")}
+              disabled={isFlipping}
+              className="flex-1 bg-gradient-to-r from-pink-600 to-orange-600 py-6 text-lg font-bold hover:from-pink-700 hover:to-orange-700"
+            >
+              Face
+            </Button>
+          </div>
+        </div>
+      </Card>
     </div>
-  );
+  )
 }
